@@ -1,0 +1,6 @@
+@GiftrMVP_Backend_HostAddress = http://localhost:5106
+
+GET {{GiftrMVP_Backend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
