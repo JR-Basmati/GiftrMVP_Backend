@@ -1,6 +1,17 @@
+using dotenv.net;
+using Microsoft.EntityFrameworkCore;
+
+
+var envVars = DotEnv.Read();
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+//Add database
+builder.Services.AddDbContext<GiftrDbContext>(options =>
+    options
+        .UseNpgsql(envVars["DB_CONNECTION_STRING"])
+        .UseSnakeCaseNamingConvention()); //Snake case for PG SQL convenience - otherwise default PascalCase requires quoting in SQL queries.
 
 //Allow CORS for React frontend
 var ViteCorsPolicy = "FrontendCorsPolicy";
@@ -16,8 +27,8 @@ builder.Services.AddCors(options =>
             });
 });
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+//Not sure what this guy is yet - I think OpenAPI is for Swagger docs?
 builder.Services.AddOpenApi();
 
 
@@ -31,7 +42,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseRouting();
 app.UseCors(ViteCorsPolicy);
-app.UseHttpsRedirection();
+app.UseHttpsRedirection();//Note: This doesn't really work with CORS.. Just causes HTTP to fail.
 
 app.MapGet("/", () => "Hello World!");
 
@@ -42,19 +53,45 @@ app.MapPost("/", (ClientHello incoming) =>
     return Results.Ok(data);
 });
 
-//app.MapGet("/weatherforecast", () =>
-//{
-//    var forecast = Enumerable.Range(1, 5).Select(index =>
-//        new WeatherForecast
-//        (
-//            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-//            Random.Shared.Next(-20, 55),
-//            summaries[Random.Shared.Next(summaries.Length)]
-//        ))
-//        .ToArray();
-//    return forecast;
-//})
-//.WithName("GetWeatherForecast");
+app.MapGet("/profiles", async (GiftrDbContext db) =>
+{
+    try
+    {
+        var profiles = db.Profiles.ToList();
+        return Results.Ok(profiles);
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine("Error retrieving users: " + ex.Message);
+        return Results.Problem("An error occurred while retrieving users.");
+    }
+});
+
+app.MapPost("/profiles", async (GiftrDbContext db, ProfileData data) =>
+{
+    try
+    {
+        var newProfile = new Profile
+        {
+            FirstName = data.firstName,
+            LastName = data.lastName ?? string.Empty,
+            Email = data.email
+        };
+        db.Profiles.Add(newProfile);
+        db.SaveChanges();
+        return Results.Ok(newProfile);
+    }
+    catch(Exception ex)
+    {
+        Console.WriteLine("Error creating user: " + ex.Message);
+        return Results.Problem("An error occurred while creating the user.");
+    }
+    
+
+
+});
 
 app.Run();
+
+public record ProfileData(string firstName, string lastName, string email);
 public record ClientHello(string message);
