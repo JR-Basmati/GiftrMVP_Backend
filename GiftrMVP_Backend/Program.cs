@@ -1,10 +1,19 @@
 using dotenv.net;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
+using GiftrMVP_Backend.Models;
+using GiftrMVP_Backend.Endpoints;
 
 var envVars = DotEnv.Read();
 
 var builder = WebApplication.CreateBuilder(args);
+
+//Make env vars accessible via builder.configuration
+builder.Configuration.AddInMemoryCollection(envVars!);
 
 
 //Add database
@@ -12,6 +21,38 @@ builder.Services.AddDbContext<GiftrDbContext>(options =>
     options
         .UseNpgsql(envVars["DB_CONNECTION_STRING"])
         .UseSnakeCaseNamingConvention()); //Snake case for PG SQL convenience - otherwise default PascalCase requires quoting in SQL queries.
+
+//Microsoft Identity - Core only, no cookies. We'll use JWT instead since we're cross-origin.
+//Also can use .AddRoles(), but this is just an MVP so no need.
+builder.Services.AddIdentityCore<Profile>(options =>
+{
+    options.Password.RequiredLength = 6;
+    options.User.RequireUniqueEmail = true;
+})
+.AddEntityFrameworkStores<GiftrDbContext>()
+.AddSignInManager();
+
+//JWT Bearer Auth - Separate from IdentityCore, since we don't want default cookie auth. This just validates the tokens.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.MapInboundClaims = false; //Don't map to long schemas.xmlsoap.org URIs
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = envVars["JWT_ISSUER"],
+            ValidAudience = envVars["JWT_AUDIENCE"],
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(envVars["JWT_SECRET"]!))
+
+        };
+    });
+
+//Add Authorization
+builder.Services.AddAuthorization();
 
 //Allow CORS for React frontend
 var ViteCorsPolicy = "FrontendCorsPolicy";
@@ -22,8 +63,7 @@ builder.Services.AddCors(options =>
             {
                 policy.WithOrigins("http://localhost:3000")
                     .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .WithOrigins("http://localhost:5106");
+                    .AllowAnyMethod();
             });
 });
 
@@ -43,6 +83,10 @@ if (app.Environment.IsDevelopment())
 app.UseRouting();
 app.UseCors(ViteCorsPolicy);
 app.UseHttpsRedirection();//Note: This doesn't really work with CORS.. Just causes HTTP to fail.
+app.UseAuthentication();
+app.UseAuthorization();
+
+
 
 app.MapGet("/", () => "Hello World!");
 
@@ -53,43 +97,12 @@ app.MapPost("/", (ClientHello incoming) =>
     return Results.Ok(data);
 });
 
-app.MapGet("/profiles", async (GiftrDbContext db) =>
-{
-    try
-    {
-        var profiles = db.Profiles.ToList();
-        return Results.Ok(profiles);
-    }
-    catch(Exception ex)
-    {
-        Console.WriteLine("Error retrieving users: " + ex.Message);
-        return Results.Problem("An error occurred while retrieving users.");
-    }
-});
 
-app.MapPost("/profiles", async (GiftrDbContext db, ProfileData data) =>
-{
-    try
-    {
-        var newProfile = new Profile
-        {
-            FirstName = data.firstName,
-            LastName = data.lastName ?? string.Empty,
-            Email = data.email
-        };
-        db.Profiles.Add(newProfile);
-        db.SaveChanges();
-        return Results.Ok(newProfile);
-    }
-    catch(Exception ex)
-    {
-        Console.WriteLine("Error creating user: " + ex.Message);
-        return Results.Problem("An error occurred while creating the user.");
-    }
-    
+//Register my custom endpoint defs from the /Endpoints dir
+Auth.MapAuthEndpoints(app);
+Recipients.MapRecipientEndpoints(app);
 
 
-});
 
 app.Run();
 

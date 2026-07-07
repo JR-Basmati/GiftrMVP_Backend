@@ -3,6 +3,7 @@ using System;
 using GiftrMVP_Backend.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GiftrMVP_Backend.Migrations
 {
     [DbContext(typeof(GiftrDbContext))]
-    partial class GiftrDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260703233905_InitialCreate")]
+    partial class InitialCreate
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -24,24 +27,28 @@ namespace GiftrMVP_Backend.Migrations
 
             modelBuilder.Entity("GiftrMVP_Backend.Models.Gift", b =>
                 {
-                    b.Property<int>("GiftId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("gift_id");
+                        .HasColumnName("id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("GiftId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GiftId")
+                        .HasColumnType("integer")
+                        .HasColumnName("gift_id");
 
                     b.Property<bool>("Given")
                         .HasColumnType("boolean")
                         .HasColumnName("given");
 
-                    b.Property<int>("Id")
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
                     b.Property<string>("Notes")
                         .HasColumnType("text")
                         .HasColumnName("notes");
+
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("integer")
+                        .HasColumnName("profile_id");
 
                     b.Property<int?>("RecipientId")
                         .HasColumnType("integer")
@@ -57,11 +64,11 @@ namespace GiftrMVP_Backend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("url");
 
-                    b.HasKey("GiftId")
+                    b.HasKey("Id")
                         .HasName("pk_gifts");
 
-                    b.HasIndex("Id")
-                        .HasDatabaseName("ix_gifts_id");
+                    b.HasIndex("ProfileId")
+                        .HasDatabaseName("ix_gifts_profile_id");
 
                     b.HasIndex("RecipientId")
                         .HasDatabaseName("ix_gifts_recipient_id");
@@ -202,16 +209,12 @@ namespace GiftrMVP_Backend.Migrations
 
             modelBuilder.Entity("GiftrMVP_Backend.Models.Recipient", b =>
                 {
-                    b.Property<int>("RecipientId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
-                        .HasColumnName("recipient_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("RecipientId"));
-
-                    b.Property<int>("Id")
-                        .HasColumnType("integer")
                         .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -223,11 +226,19 @@ namespace GiftrMVP_Backend.Migrations
                         .HasColumnType("text")
                         .HasColumnName("notes");
 
-                    b.HasKey("RecipientId")
+                    b.Property<int>("ProfileId")
+                        .HasColumnType("integer")
+                        .HasColumnName("profile_id");
+
+                    b.Property<int>("RecipientId")
+                        .HasColumnType("integer")
+                        .HasColumnName("recipient_id");
+
+                    b.HasKey("Id")
                         .HasName("pk_recipients");
 
-                    b.HasIndex("Id")
-                        .HasDatabaseName("ix_recipients_id");
+                    b.HasIndex("ProfileId")
+                        .HasDatabaseName("ix_recipients_profile_id");
 
                     b.ToTable("recipients", (string)null);
                 });
@@ -400,10 +411,10 @@ namespace GiftrMVP_Backend.Migrations
                 {
                     b.HasOne("GiftrMVP_Backend.Models.Profile", "Profile")
                         .WithMany("Gifts")
-                        .HasForeignKey("Id")
+                        .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_gifts_profile_id");
+                        .HasConstraintName("fk_gifts_profile_profile_id");
 
                     b.HasOne("GiftrMVP_Backend.Models.Recipient", "Recipient")
                         .WithMany("Gifts")
@@ -431,10 +442,10 @@ namespace GiftrMVP_Backend.Migrations
                 {
                     b.HasOne("GiftrMVP_Backend.Models.Profile", "Profile")
                         .WithMany("Recipients")
-                        .HasForeignKey("Id")
+                        .HasForeignKey("ProfileId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_recipients_profile_id");
+                        .HasConstraintName("fk_recipients_profile_profile_id");
 
                     b.Navigation("Profile");
                 });

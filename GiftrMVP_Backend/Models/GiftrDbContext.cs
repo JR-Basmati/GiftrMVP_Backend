@@ -1,10 +1,13 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+
 
 namespace GiftrMVP_Backend.Models
 {
-    public class GiftrDbContext : DbContext
+    public class GiftrDbContext : IdentityDbContext<Profile, IdentityRole<int>, int>
     {
         //Is this needed? Beginner examples just show it as blank..
         public GiftrDbContext(DbContextOptions<GiftrDbContext> options) : base(options)
@@ -20,10 +23,6 @@ namespace GiftrMVP_Backend.Models
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<Profile>()
-                .HasIndex(u => u.Email)
-                .IsUnique();
 
             //1:1 between Gift and ImageAsset - Should be one to many, but I wanted to try doing 1:1 if EF
             //Almost FEELS like the FK belongs in gift, but that makes the CASCADE delete go the wrong way.
@@ -42,9 +41,12 @@ namespace GiftrMVP_Backend.Models
         }
     }
 
-    public class Profile
+    public class Profile : IdentityUser<int>
     {
-        public int ProfileId { get; set; }
+        //
+        // Under the hood IdentityUser turns this into AspNetUser table.
+        // Primary key is auto-populated as "Id". 
+        //
 
         [MaxLength(100)]
         public required string FirstName { get; set; }
@@ -52,12 +54,6 @@ namespace GiftrMVP_Backend.Models
         [MaxLength(100)]
         public string? LastName { get; set; }
 
-        [MaxLength(255)]
-        public required string Email { get; set; }
-
-        [MaxLength(100)]
-        [MinLength(6)]
-        public required string Password { get; set; }
 
         //Zero or many recipients
         public ICollection<Recipient> Recipients { get; set; } = new List<Recipient>();
@@ -67,14 +63,18 @@ namespace GiftrMVP_Backend.Models
 
     public class Recipient
     {
+        [Key]
         public int RecipientId { get; set; }
+
         [MaxLength(255)]
         public required string Name { get; set; }
+        
         public string? Notes { get; set; }
 
 
         //Required link back to profile
-        public int ProfileId { get; set; }
+        [ForeignKey(nameof(Profile))]
+        public int Id { get; set; }
         public Profile Profile { get; set; } = null!;
 
         //Zero or many gifts
@@ -84,6 +84,7 @@ namespace GiftrMVP_Backend.Models
 
     public class Gift
     {
+        [Key]
         public int GiftId { get; set; }
         [MaxLength(255)]
         public required string Title { get; set; }
@@ -92,7 +93,8 @@ namespace GiftrMVP_Backend.Models
         public string? Notes { get; set; }
 
         //Required Profile association
-        public int ProfileId { get; set; }
+        [ForeignKey(nameof(Profile))]
+        public int Id { get; set; }
         public Profile Profile { get; set; } = null!;
 
         //FK back to recipient - optional because a gift may just be an un-associated "idea" initally.
