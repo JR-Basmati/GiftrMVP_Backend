@@ -46,7 +46,8 @@ covers:
 - **Events** — occasions a gift is due for, linked to recipients.
 
 **Full ERD:**
-<img width="1381" height="946" alt="image" src="https://github.com/user-attachments/assets/c8410f05-64e4-4e4f-b6ce-ba34b2bbb1de" />
+<img width="1368" height="944" alt="image" src="https://github.com/user-attachments/assets/7d59da7f-6d5c-4ec6-99da-86fa2046e746" />
+
 
 
 ## Getting Started
@@ -69,7 +70,7 @@ dotnet run
 
 ## Related Repositories
 
-- **Frontend** — react client that consumes this API is still listed as "Private" for now.
+- **Frontend** — React client that consumes this API is still listed as "Private" for now.
 
 ## Roadmap
 
