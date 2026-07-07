@@ -59,7 +59,7 @@ covers:
 dotnet restore
 
 # Set your PostgreSQL connection string
-# (via appsettings.Development.json or user secrets)
+# Currently configured to use .env file
 
 # Apply the database schema
 dotnet ef database update
