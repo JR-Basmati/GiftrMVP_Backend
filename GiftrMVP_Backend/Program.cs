@@ -85,22 +85,18 @@ app.UseCors(ViteCorsPolicy);
 app.UseHttpsRedirection();//Note: This doesn't really work with CORS.. Just causes HTTP to fail.
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseStaticFiles();
 
 
 
 app.MapGet("/", () => "Hello World!");
 
-app.MapPost("/", (ClientHello incoming) =>
-{
-    Console.WriteLine("Client sent: " + incoming.message);
-    var data = new { Message = "Hello from the server" };
-    return Results.Ok(data);
-});
 
 
 //Register my custom endpoint defs from the /Endpoints dir
 Auth.MapAuthEndpoints(app);
 Recipients.MapRecipientEndpoints(app);
+Gifts.MapGiftEndpoints(app);
 
 
 
